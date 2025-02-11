@@ -1,0 +1,12 @@
+[package]
+name = "back-cv"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+actix-web = "4.0"
+sea-orm = { version = "1.1.0", features = ["sqlx-sqlite"] }
+sqlx = { version = "0.8.3", features = ["sqlite", "runtime-tokio"] }
+serde = "1.0.217"
+tokio = { version = "1", features = ["full"] }
+dotenv = "0.15"
