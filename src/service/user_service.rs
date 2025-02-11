@@ -1,23 +1,32 @@
 use crate::entity::user;
+use crate::db::DatabaseConnector;
 use sea_orm::*;
-use std::env;
-use dotenv::dotenv;
-use actix_web::{web};
+use actix_web::web;
 pub struct UserService;
 
 impl UserService {
   pub async fn create_user( body: web::Json<user::Model>) -> Result<user::ActiveModel, DbErr> {
-    let database_url = "sqlite://C:/Users/Deivid/Desktop/back-cv/database.db".to_string();
-    let db = Database::connect(&database_url).await.unwrap();
-    dbg!(&body);
-      user::ActiveModel {       
-        name: Set(body.name.to_string()),
-        age: Set(body.age),
-        email: Set(body.email.to_string()),
-        summery: Set(body.summery.to_string()),
-        ..Default::default()
-      }
-      .save(&db)
-      .await
+
+    let db = DatabaseConnector::connect().await?;
+    let user::Model { name, age, email, summery, .. } = body.into_inner();
+    user::ActiveModel {       
+      name: Set(name),
+      age: Set(age),
+      email: Set(email),
+      summery: Set(summery),
+      ..Default::default()
+    }
+    .save(&db)
+    .await
+  }
+
+  pub async fn get_user(id: u32) -> Result<JsonValue, DbErr> {
+    let db = DatabaseConnector::connect().await?;
+    let id_i32: i32 = id.try_into().map_err(|_| DbErr::Custom("ID conversion error".into()))?;
+    match user::Entity::find_by_id(id_i32).into_json().one(&db).await {
+      Ok(Some(user)) => Ok(user),
+      Ok(None) => Err(DbErr::RecordNotFound("User not found".into())),
+      Err(err) => Err(err),
+    }
   }
 }

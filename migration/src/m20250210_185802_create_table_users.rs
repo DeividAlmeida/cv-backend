@@ -12,10 +12,10 @@ impl MigrationTrait for Migration {
 						.table(Users::Table)
 						.if_not_exists()
 						.col(pk_auto(Users::Id))
-						.col(string(Users::Name))
-						.col(integer(Users::Age))                    
-						.col(string(Users::Email))
-						.col(text(Users::Summery))
+						.col(string(Users::Name).not_null())
+						.col(integer(Users::Age).not_null())                    
+						.col(string(Users::Email).not_null().unique_key())
+						.col(text(Users::Summery).not_null())
 						.to_owned(),
 				)
 				.await
