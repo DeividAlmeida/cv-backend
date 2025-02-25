@@ -1,32 +1,32 @@
 use crate::entity::user;
-use crate::db::DatabaseConnector;
-use sea_orm::*;
+use crate::repository::Queries;
+use sea_orm::{sea_query::{Alias, SimpleExpr}, DbErr, ExecResult, Iden, Iterable};
 use actix_web::web;
-pub struct UserService;
 
-impl UserService {
-  pub async fn create_user( body: web::Json<user::Model>) -> Result<user::ActiveModel, DbErr> {
+pub(crate) trait UserService {
+  async fn create_user(body: web::Json<user::Model>) -> Result<ExecResult, DbErr>;
+  fn set_columns() -> Vec<Alias>;
+}
 
-    let db = DatabaseConnector::connect().await?;
-    let user::Model { name, age, email, summery, .. } = body.into_inner();
-    user::ActiveModel {       
-      name: Set(name),
-      age: Set(age),
-      email: Set(email),
-      summery: Set(summery),
-      ..Default::default()
-    }
-    .save(&db)
-    .await
+impl UserService for Queries {
+
+  fn set_columns() -> Vec<Alias> {
+    user::Column::iter()
+      .filter(|col| col.to_string() != "id".to_string())
+      .map(|col| Alias::new(col.to_string().as_str()))
+      .collect()
   }
 
-  pub async fn get_user(id: u32) -> Result<JsonValue, DbErr> {
-    let db = DatabaseConnector::connect().await?;
-    let id_i32: i32 = id.try_into().map_err(|_| DbErr::Custom("ID conversion error".into()))?;
-    match user::Entity::find_by_id(id_i32).into_json().one(&db).await {
-      Ok(Some(user)) => Ok(user),
-      Ok(None) => Err(DbErr::RecordNotFound("User not found".into())),
-      Err(err) => Err(err),
-    }
+  async fn create_user(body: web::Json<user::Model>) -> Result<ExecResult, DbErr> {
+    let body = body.into_inner();
+    let values: Vec<SimpleExpr> = vec![
+      body.name.into(),
+      body.age.into(),
+      body.email.into(),
+      body.summery.into()
+    ];
+    let columns = Self::set_columns();
+
+    Queries::create(user::Entity, columns, values).await
   }
 }

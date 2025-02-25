@@ -2,6 +2,7 @@ mod controller;
 mod service;
 mod entity;
 mod db;
+mod repository;
 
 use actix_web::{ post, get, web::{ Path, Json }, App, HttpServer, HttpResponse };
 use controller::user_controller::UserController;
@@ -14,7 +15,7 @@ async fn main() -> std::io::Result<()> {
   HttpServer::new(|| {
     App::new()
       .service(create_user)
-      .service(get_user)
+      // .service(get_user)
   })
   .bind(("127.0.0.1", port))?
   .run()
@@ -26,7 +27,7 @@ async fn create_user(body: Json<entity::user::Model>) -> impl Responder {
   UserController::create_user(body).await
 }
 
-#[get("/{id}")]
-async fn get_user(id: Path<u32>) -> impl Responder {
-  UserController::get_user(id).await
-}
+// #[get("/{id}")]
+// async fn get_user(id: Path<u32>) -> impl Responder {
+//   UserController::get_user(id).await
+// }
